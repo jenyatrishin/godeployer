@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config>
+    <environment type="developer">
+        <server>127.0.0.1</server>
+        <login>jenya</login>
+        <password>jenya</password>
+        <homeDir>/home/jenya/domains/test.loc</homeDir>
+        <beforeDeploy>
+            <command>php bin/magento setup:upgrade</command>
+        </beforeDeploy>
+        <afterDeploy>
+            <command>php bin/magento c:c</command>
+        </afterDeploy>
+    </environment>
+    <version>1.0.0</version>
+</config>
