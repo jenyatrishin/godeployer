@@ -5,10 +5,11 @@ import (
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
+	"strings"
 )
 
 type AbstractDeployer interface {
-	DeployTo(dir string)
+	DeployTo(dir string, repo string, gitUser string, gitPass string, gitBranch string)
 	PrepareConfig(host string, port string, user string, password string)
 }
 
@@ -28,15 +29,13 @@ func (d *SshDeployer) PrepareConfig (host string, port string, user string, pass
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-
 }
 
-func (d *SshDeployer) DeployTo (dir string) {
-	//addr := fmt.Sprintf("%s:%d", d.host, d.port)
+func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string) {
+
 	addr := d.host+":"+d.port
-
 	client, err := ssh.Dial("tcp", addr, d.config)
-
+	
 	//should be changed to tools/error object
 	if err != nil{
 		panic(err)
@@ -62,13 +61,24 @@ func (d *SshDeployer) DeployTo (dir string) {
 
 	// Start remote shell
 	err = session.Shell()
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//session.Run("cd "+ dir + "&& pwd")
+	gitAddress := "https://"+gitUser+":"+gitPass+"@"+repo+" "+gitBranch
+	fmt.Println(gitAddress)
+	commands := []string{
+		"cd "+dir,
+		"pwd",
+		"git pull "+gitAddress,
+//		"git pull https://trishinjenya:Flashman44@bitbucket.org/trishinjenya/smarketing.git .",
+		"exit",
+	}
 
-	_, err = fmt.Fprintf(stdin, "%s\n", "cd "+ dir + "&& pwd")
+	commandsString := strings.Join(commands," && ")
+
+	_, err = fmt.Fprintf(stdin, "%s\n", commandsString)
 	if err != nil {
 		log.Fatal(err)
 	}

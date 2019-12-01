@@ -21,7 +21,6 @@ func (c *Config) ReadConfig (name string, adapterIns adapter.ConfigAdapter) *Con
 }
 
 func (c *Config) WriteConfig (name string, adapterIns adapter.ConfigAdapter) {
-	//adapterIns := GetAdapterByType(c.ConfigFileType)
 	adapterIns.WriteConfigToFile(name)
 }
 
@@ -52,6 +51,7 @@ type Env struct {
 	HomeDir string `xml:"homeDir"`
 	BeforeDeploy []Command `xml:"beforeDeploy"`
 	AfterDeploy []Command `xml:"afterDeploy"`
+	GitConfig GitConfig `xml:"git"`
 }
 
 func (e *Env) SetParam (name string, value string) *Env {
@@ -67,4 +67,11 @@ func (e *Env) GetParam (name string) interface{} {
 
 type Command struct {
 	Item string `xml:"command"`
+}
+
+type GitConfig struct {
+	Repository string `xml:"repository"`
+	User string `xml:"user"`
+	Password string `xml:"password"`
+	Branch string `xml:"branch"`
 }

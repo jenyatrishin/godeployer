@@ -1,17 +1,18 @@
 package main
 
 import (
+	"./adapter"
 	"./config"
 	"./factory/xmlAdapterFactory"
+	"./factory/deployerFactory"
+	"./tools"
 	"flag"
 	"fmt"
 	"strings"
-	"./tools"
-	"./adapter"
-	"./factory/deployerFactory"
 )
 
 const FILENAME string = "config"
+const SSH_POST string = "22"
 
 func run (f func() string) bool {
 	f()
@@ -35,7 +36,7 @@ func validateConfig () string {
 	return "create config"
 }
 
-func deploy () string {
+func deploy (mode string) string {
 	//should be taken from command line
 	ext := "xml"
 	adapterIns := GetAdapterByType(ext)
@@ -43,24 +44,31 @@ func deploy () string {
 	//deprecated - gonna be removed
 	configIns.ConfigFileType = ext
 	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
-	//fmt.Println(result.GetEnvs())
+
+	deployer := deployerFactory.GetDeployer()
+	currentEnv := configIns.GetEnvByType(mode)
+
+	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, currentEnv.Password)
+	deployer.DeployTo(currentEnv.HomeDir, currentEnv.GitConfig.Repository, currentEnv.GitConfig.User, currentEnv.GitConfig.Password, currentEnv.GitConfig.Branch)
 
 	return "read config"
 }
 
 func deployToDev () string {
-	//should be taken from command line
-	ext := "xml"
-	adapterIns := GetAdapterByType(ext)
-	configIns := new(config.Config)
-	configIns.ConfigFileType = ext
-	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
-	deployer := deployerFactory.GetDeployer()
-	currentEnv := configIns.GetEnvByType("developer")
 
-	deployer.PrepareConfig(currentEnv.Server, "22", currentEnv.Login, currentEnv.Password)
-	deployer.DeployTo(currentEnv.HomeDir)
+	deploy("developer")
+	return "deployed to dev"
+}
 
+func deployToStaging () string {
+
+	deploy("developer")
+	return "deployed to dev"
+}
+
+func deployToProduction () string {
+
+	deploy("developer")
 	return "deployed to dev"
 }
 
@@ -73,8 +81,8 @@ func main () {
 		},
 		"deploy": {
 			"developer": deployToDev,
-			"staging": deploy,
-			"production": deploy,
+			"staging": deployToStaging,
+			"production": deployToProduction,
 		},
 	}
 

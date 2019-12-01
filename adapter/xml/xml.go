@@ -65,18 +65,38 @@ CreateStep:
 		fmt.Print("Enter project home dir on server: ")
 		homeDir, _ := reader.ReadString('\n')
 
+		fmt.Print("Enter git repository https address: ")
+		gitRepo, _ := reader.ReadString('\n')
+
+		fmt.Print("Enter git user name: ")
+		gitUser, _ := reader.ReadString('\n')
+
+		fmt.Print("Enter git user password: ")
+		gitPassword, _ := reader.ReadString('\n')
+
+		fmt.Print("Enter git branch name: ")
+		gitBranch, _ := reader.ReadString('\n')
+
 		envIns.EnvType = strings.Replace(env, "\n", "", 1)
 		envIns.Server = strings.Replace(ip, "\n", "", 1)
 		envIns.Login = strings.Replace(login, "\n", "", 1)
 		envIns.Password = strings.Replace(password, "\n", "", 1)
 		envIns.HomeDir = strings.Replace(homeDir, "\n", "", 1)
 
+		gitConfigIns := config.GitConfig{
+			Repository: prepareStringToSet(gitRepo),
+			User: prepareStringToSet(gitUser),
+			Password: prepareStringToSet(gitPassword),
+			Branch: prepareStringToSet(gitBranch),
+		}
+		envIns.GitConfig = gitConfigIns
+
 	InputBeforeDeploy:
 		fmt.Print("Enter commands before deploy or blank for exit: ")
 		beforeCommand, _ := reader.ReadString('\n')
 
 		if strings.Replace(beforeCommand, "\n", "", 1) != "" {
-			commandItem := config.Command{Item:strings.Replace(beforeCommand, "\n", "", 1)}
+			commandItem := config.Command{Item:prepareStringToSet(beforeCommand)}
 			envIns.BeforeDeploy = append(envIns.BeforeDeploy, commandItem)
 			goto InputBeforeDeploy
 		}
@@ -93,7 +113,7 @@ CreateStep:
 
 		conf.Envs = append(conf.Envs, envIns)
 
-		fmt.Println(conf)
+		//fmt.Println(conf)
 
 		if len(Difference(allowed, entered)) > 0 {
 			goto CreateStep
@@ -110,6 +130,10 @@ CreateStep:
 	_ = ioutil.WriteFile(name, file, 0777)
 
 	return "create config"
+}
+
+func prepareStringToSet (str string) string {
+	return strings.Replace(str, "\n", "", 1)
 }
 
 func Difference(slice1 []string, slice2 []string) []string {
