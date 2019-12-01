@@ -88,6 +88,9 @@ func main () {
 
 	flag.Parse()
 	command := flag.Args()
+	//opt := flag.String("format","xml","string")
+	//fmt.Println(opt)
+	//return
 
 	if len(command) > 0 {
 		s := strings.Split(command[0], ":")

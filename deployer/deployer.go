@@ -35,7 +35,7 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 
 	addr := d.host+":"+d.port
 	client, err := ssh.Dial("tcp", addr, d.config)
-	
+
 	//should be changed to tools/error object
 	if err != nil{
 		panic(err)
@@ -65,14 +65,14 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 	if err != nil {
 		log.Fatal(err)
 	}
+	gitDotDir := dir + "/.git"
+	gitAddress := "https://"+gitUser+":"+gitPass+"@"+repo
+	gitPullCommand := "git pull "+gitAddress+" "+gitBranch
+	gitCloneCommand := "git clone " + gitAddress + " ."
 
-	gitAddress := "https://"+gitUser+":"+gitPass+"@"+repo+" "+gitBranch
-	fmt.Println(gitAddress)
 	commands := []string{
 		"cd "+dir,
-		"pwd",
-		"git pull "+gitAddress,
-//		"git pull https://trishinjenya:Flashman44@bitbucket.org/trishinjenya/smarketing.git .",
+		"if test -d "+gitDotDir+"; then "+gitPullCommand+"; else "+gitCloneCommand+"; fi",
 		"exit",
 	}
 
