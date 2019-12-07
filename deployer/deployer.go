@@ -3,14 +3,18 @@ package deployer
 import (
 	"fmt"
 	"golang.org/x/crypto/ssh"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 )
 
+const AUTH_PASSWORD string  = "password"
+const AUTH_KEY string = "key"
+
 type AbstractDeployer interface {
-	DeployTo(dir string, repo string, gitUser string, gitPass string, gitBranch string)
-	PrepareConfig(host string, port string, user string, password string)
+	DeployTo(dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string)
+	PrepareConfig(host string, port string, user string, authMethodValue string, authMethod string)
 }
 
 type SshDeployer struct {
@@ -19,19 +23,27 @@ type SshDeployer struct {
 	port string
 }
 
-func (d *SshDeployer) PrepareConfig (host string, port string, user string, password string) {
+func (d *SshDeployer) PrepareConfig (host string, port string, user string, authMethodValue string, authMethod string) {
+	var auth []ssh.AuthMethod
+	if authMethod == AUTH_PASSWORD {
+		auth = []ssh.AuthMethod{
+			ssh.Password(authMethodValue),
+		}
+	} else if authMethod == AUTH_KEY {
+		auth = []ssh.AuthMethod{
+			publicKeyFile(authMethodValue),
+		}
+	}
 	d.host = host
 	d.port = port
 	d.config = &ssh.ClientConfig{
 		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
+		Auth: auth,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 }
 
-func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string) {
+func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string) {
 
 	addr := d.host+":"+d.port
 	client, err := ssh.Dial("tcp", addr, d.config)
@@ -65,6 +77,12 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if gitUser == "" || gitPass == "" || repo == "" || gitBranch == "" {
+		fmt.Println("Git credentials not defined")
+		return
+	}
+
 	gitDotDir := dir + "/.git"
 	gitAddress := "https://"+gitUser+":"+gitPass+"@"+repo
 	gitPullCommand := "git pull "+gitAddress+" "+gitBranch
@@ -73,6 +91,7 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 	commands := []string{
 		"cd "+dir,
 		"if test -d "+gitDotDir+"; then "+gitPullCommand+"; else "+gitCloneCommand+"; fi",
+		afterCommands,
 		"exit",
 	}
 
@@ -89,4 +108,21 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 		log.Fatal(err)
 	}
 	fmt.Println("finish")
+}
+
+func publicKeyFile(file string) ssh.AuthMethod {
+
+	buffer, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		return nil
+	}
+
+	key, err := ssh.ParsePrivateKey(buffer)
+
+	if err != nil {
+		return nil
+	}
+
+	return ssh.PublicKeys(key)
 }

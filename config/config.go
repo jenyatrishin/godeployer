@@ -47,7 +47,9 @@ type Env struct {
 	EnvType string `xml:"type,attr"`
 	Server string `xml:"server"`
 	Login string `xml:"login"`
+	AuthType string `xml:"auth_type"`
 	Password string `xml:"password"`
+	KeyFile string `xml:"key"`
 	HomeDir string `xml:"homeDir"`
 	BeforeDeploy []Command `xml:"beforeDeploy"`
 	AfterDeploy []Command `xml:"afterDeploy"`

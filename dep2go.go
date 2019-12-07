@@ -13,6 +13,7 @@ import (
 
 const FILENAME string = "config"
 const SSH_POST string = "22"
+const VERSION string = "0.1-alpha"
 
 func run (f func() string) bool {
 	f()
@@ -47,11 +48,38 @@ func deploy (mode string) string {
 
 	deployer := deployerFactory.GetDeployer()
 	currentEnv := configIns.GetEnvByType(mode)
+	authMethod := currentEnv.AuthType
 
-	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, currentEnv.Password)
-	deployer.DeployTo(currentEnv.HomeDir, currentEnv.GitConfig.Repository, currentEnv.GitConfig.User, currentEnv.GitConfig.Password, currentEnv.GitConfig.Branch)
+	var pass string
+	if authMethod == "key" {
+		pass = currentEnv.KeyFile
+	} else {
+		pass =  currentEnv.Password
+	}
+
+	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, pass, authMethod)
+	deployer.DeployTo(
+		currentEnv.HomeDir,
+		currentEnv.GitConfig.Repository,
+		currentEnv.GitConfig.User,
+		currentEnv.GitConfig.Password,
+		currentEnv.GitConfig.Branch,
+		getAfterCommandString(currentEnv.AfterDeploy),
+		)
 
 	return "read config"
+}
+
+func getAfterCommandString (afterDeployCommands []config.Command) string {
+	output := ""
+	for i := 0; i < len(afterDeployCommands); i++ {
+		output += afterDeployCommands[i].Item
+		if i != len(afterDeployCommands)-1 {
+			output += "&&"
+		}
+	}
+
+	return output
 }
 
 func deployToDev () string {
@@ -72,6 +100,11 @@ func deployToProduction () string {
 	return "deployed to dev"
 }
 
+func getVersion () string {
+	fmt.Println(VERSION)
+	return VERSION
+}
+
 func main () {
 
 	commands := map[string]map[string]func()string{
@@ -84,13 +117,14 @@ func main () {
 			"staging": deployToStaging,
 			"production": deployToProduction,
 		},
+		"version": {
+			"show": getVersion,
+		},
 	}
 
 	flag.Parse()
 	command := flag.Args()
-	//opt := flag.String("format","xml","string")
-	//fmt.Println(opt)
-	//return
+
 
 	if len(command) > 0 {
 		s := strings.Split(command[0], ":")

@@ -34,6 +34,12 @@ func (adapter ConfigAdapterXml) ReadConfigFromFile (c interface{}, name string) 
 
 func (adapter ConfigAdapterXml) WriteConfigToFile (name string) interface{} {
 
+	if _, err := os.Open(name); err == nil {
+		fmt.Println("File's already exists")
+		return nil
+//		panic("File's already exists")
+	}
+
 	allowed := []string{"developer","staging","production"}
 	var entered []string
 
@@ -51,6 +57,9 @@ CreateStep:
 
 	if strings.Replace(env, "\n", "", 1) != "" {
 
+		password := ""
+		key := ""
+
 		entered = append(entered, strings.Replace(env, "\n", "", 1))
 
 		fmt.Print("Enter server address: ")
@@ -59,8 +68,16 @@ CreateStep:
 		fmt.Print("Enter server login: ")
 		login, _ := reader.ReadString('\n')
 
-		fmt.Print("Enter server password: ")
-		password, _ := reader.ReadString('\n')
+		fmt.Print("Enter server auth type (key or password only): ")
+		authType, _ := reader.ReadString('\n')
+
+		if prepareStringToSet(authType) == "key" {
+			fmt.Print("Enter key location: ")
+			key, _ = reader.ReadString('\n')
+		} else {
+			fmt.Print("Enter server password: ")
+			password, _ = reader.ReadString('\n')
+		}
 
 		fmt.Print("Enter project home dir on server: ")
 		homeDir, _ := reader.ReadString('\n')
@@ -77,11 +94,13 @@ CreateStep:
 		fmt.Print("Enter git branch name: ")
 		gitBranch, _ := reader.ReadString('\n')
 
-		envIns.EnvType = strings.Replace(env, "\n", "", 1)
-		envIns.Server = strings.Replace(ip, "\n", "", 1)
-		envIns.Login = strings.Replace(login, "\n", "", 1)
-		envIns.Password = strings.Replace(password, "\n", "", 1)
-		envIns.HomeDir = strings.Replace(homeDir, "\n", "", 1)
+		envIns.EnvType = prepareStringToSet(env)
+		envIns.Server = prepareStringToSet(ip)
+		envIns.Login = prepareStringToSet(login)
+		envIns.Password = prepareStringToSet(password)
+		envIns.HomeDir = prepareStringToSet(homeDir)
+		envIns.AuthType = prepareStringToSet(authType)
+		envIns.KeyFile = prepareStringToSet(key)
 
 		gitConfigIns := config.GitConfig{
 			Repository: prepareStringToSet(gitRepo),
