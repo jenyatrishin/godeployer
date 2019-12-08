@@ -13,7 +13,7 @@ import (
 
 const FILENAME string = "config"
 const SSH_POST string = "22"
-const VERSION string = "0.1-alpha"
+const VERSION string = "0.2-alpha"
 
 func run (f func() string) bool {
 	f()
@@ -42,7 +42,7 @@ func deploy (mode string) string {
 	ext := "xml"
 	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
-	//deprecated - gonna be removed
+	//deprecated - gonna be removed on 0.3-alpha version
 	configIns.ConfigFileType = ext
 	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
 
@@ -83,21 +83,18 @@ func getAfterCommandString (afterDeployCommands []config.Command) string {
 }
 
 func deployToDev () string {
-
 	deploy("developer")
 	return "deployed to dev"
 }
 
 func deployToStaging () string {
-
-	deploy("developer")
-	return "deployed to dev"
+	deploy("staging")
+	return "deployed to staging"
 }
 
 func deployToProduction () string {
-
-	deploy("developer")
-	return "deployed to dev"
+	deploy("production")
+	return "deployed to prod"
 }
 
 func getVersion () string {
@@ -106,7 +103,35 @@ func getVersion () string {
 }
 
 func main () {
+	commands := getCommands()
 
+	flag.Parse()
+	command := flag.Args()
+
+	if len(command) > 0 {
+		s := strings.Split(command[0], ":")
+		if len(s) < 2 {
+			fmt.Println(tools.UserError("You set bad command"))
+			return
+		}
+		closure := tools.CommandIsAllowed(s, commands)
+		run(closure)
+	} else {
+		fmt.Println("Dep2go deployment tool")
+		fmt.Println("Usage: dep2go [--command]")
+		getCommandsToString()
+		return
+	}
+}
+
+func GetAdapterByType (configType string) adapter.ConfigAdapter {
+	if configType == "xml" {
+		return xmlAdapterFactory.GetXmlAdapter()
+	}
+	return xmlAdapterFactory.GetXmlAdapter()
+}
+
+func getCommands () map[string]map[string]func()string {
 	commands := map[string]map[string]func()string{
 		"config": {
 			"make": createConfig,
@@ -122,31 +147,15 @@ func main () {
 		},
 	}
 
-	flag.Parse()
-	command := flag.Args()
-
-
-	if len(command) > 0 {
-		s := strings.Split(command[0], ":")
-		if len(s) < 2 {
-			fmt.Println(tools.UserError("You set bad command"))
-			return
-		}
-
-		closure := tools.CommandIsAllowed(s, commands)
-
-		run(closure)
-
-	} else {
-		fmt.Println(tools.UserError("You have to input one of allowed commands"))
-		return
-	}
-
+	return commands
 }
 
-func GetAdapterByType (configType string) adapter.ConfigAdapter {
-	if configType == "xml" {
-		return xmlAdapterFactory.GetXmlAdapter()
+func getCommandsToString () {
+	commands := getCommands()
+	fmt.Println("Commands that can be used:")
+	for k, v := range commands {
+		for q, _ := range v {
+			fmt.Println(k + ":" + q)
+		}
 	}
-	return xmlAdapterFactory.GetXmlAdapter()
 }

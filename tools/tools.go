@@ -16,7 +16,6 @@ func CommandIsAllowed (command []string, commands map[string]map[string]func()st
 			return v
 		}
 	}
-
 	return wrongCommand
 }
 
