@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -55,12 +56,12 @@ CreateStep:
 	env, _ := reader.ReadString('\n')
 
 
-	if strings.Replace(env, "\n", "", 1) != "" {
+	if prepareStringToSet(env) != "" {
 
 		password := ""
 		key := ""
 
-		entered = append(entered, strings.Replace(env, "\n", "", 1))
+		entered = append(entered, prepareStringToSet(env))
 
 		fmt.Print("Enter server address: ")
 		ip, _ := reader.ReadString('\n')
@@ -113,8 +114,7 @@ CreateStep:
 	InputBeforeDeploy:
 		fmt.Print("Enter commands before deploy or blank for exit: ")
 		beforeCommand, _ := reader.ReadString('\n')
-
-		if strings.Replace(beforeCommand, "\n", "", 1) != "" {
+		if prepareStringToSet(beforeCommand) != "" {
 			commandItem := config.Command{Item:prepareStringToSet(beforeCommand)}
 			envIns.BeforeDeploy = append(envIns.BeforeDeploy, commandItem)
 			goto InputBeforeDeploy
@@ -124,8 +124,8 @@ CreateStep:
 		fmt.Print("Enter commands after deploy or blank for exit: ")
 		afterCommand, _ := reader.ReadString('\n')
 
-		if strings.Replace(afterCommand, "\n", "", 1) != "" {
-			commandItem := config.Command{Item:strings.Replace(afterCommand, "\n", "", 1)}
+		if prepareStringToSet(afterCommand) != "" {
+			commandItem := config.Command{Item:prepareStringToSet(afterCommand)}
 			envIns.AfterDeploy = append(envIns.AfterDeploy, commandItem)
 			goto InputAfterDeploy
 		}
@@ -152,7 +152,11 @@ CreateStep:
 }
 
 func prepareStringToSet (str string) string {
-	return strings.Replace(str, "\n", "", 1)
+	sep := "\n"
+	if runtime.GOOS == "windows" {
+		sep = "\r\n"
+	}
+	return strings.Replace(str, sep, "", 1)
 }
 
 func Difference(slice1 []string, slice2 []string) []string {

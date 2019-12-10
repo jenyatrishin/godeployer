@@ -13,7 +13,7 @@ import (
 
 const FILENAME string = "config"
 const SSH_POST string = "22"
-const VERSION string = "0.2-alpha"
+const VERSION string = "0.2.1-alpha"
 
 func run (f func() string) bool {
 	f()
