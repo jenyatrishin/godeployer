@@ -142,7 +142,7 @@ CreateStep:
 
 	fmt.Print("Enter project version: ")
 	version, _ := reader.ReadString('\n')
-	conf.Version = strings.Replace(version,"\n","",1)
+	conf.Version = prepareStringToSet(version)
 
 	file, _ := xml.MarshalIndent(conf, "", " ")
 
