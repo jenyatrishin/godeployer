@@ -7,11 +7,9 @@ import (
 )
 
 type Config struct {
-	//deprecated - gonna be removed
-	ConfigFileType string
 	XMLName xml.Name `xml:"config"`
 	Envs []Env `xml:"environment"`
-	Version string `xml:"version"`
+//	Version string `xml:"version"`
 }
 
 func (c *Config) ReadConfig (name string, adapterIns adapter.ConfigAdapter) *Config {
@@ -40,6 +38,11 @@ func (c *Config) GetEnvByType (envType string) Env {
 	}
 
 	return out
+}
+
+func (c *Config) ValidateConfig (name string, adapterIns adapter.ConfigAdapter) bool {
+
+	return true
 }
 
 type Env struct {

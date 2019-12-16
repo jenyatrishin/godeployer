@@ -14,6 +14,9 @@ import (
 const FILENAME string = "config"
 const SSH_POST string = "22"
 const VERSION string = "0.2.1-alpha"
+const DEVELOPER string = "developer"
+const STAGING string = "staging"
+const PRODUCTION string = "production"
 
 func run (f func() string) bool {
 	f()
@@ -21,33 +24,48 @@ func run (f func() string) bool {
 }
 
 func createConfig () string {
-	//should be taken from command line
-	ext := "xml"
+	ext := getExtFromCommand()
+
 	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
-	//deprecated - gonna be removed
-	configIns.ConfigFileType = ext
-	configIns.WriteConfig(FILENAME+"."+ext,adapterIns)
+
+	configIns.WriteConfig(FILENAME+"."+ext, adapterIns)
 	fmt.Println("Config file created")
 	return "OK"
 }
 
 func validateConfig () string {
-	fmt.Println("validate config")
-	return "create config"
+	fmt.Println("config file is validating...")
+	ext := getExtFromCommand()
+	message := "Config file not valid"
+
+	adapterIns := GetAdapterByType(ext)
+	configIns := new(config.Config)
+
+	if configIns.ValidateConfig(FILENAME+"."+ext, adapterIns) {
+		message = "Config file valid "
+	}
+	fmt.Println(message)
+	return "validate config"
 }
 
 func deploy (mode string) string {
-	//should be taken from command line
-	ext := "xml"
+	ext := getExtFromCommand()
+
 	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
-	//deprecated - gonna be removed on 0.3-alpha version
-	configIns.ConfigFileType = ext
+
 	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
 
 	deployer := deployerFactory.GetDeployer()
 	currentEnv := configIns.GetEnvByType(mode)
+
+	if currentEnv.EnvType == "" {
+		err := tools.UserError("That environment is not defined")
+		fmt.Println(err)
+		return ""
+	}
+
 	authMethod := currentEnv.AuthType
 
 	var pass string
@@ -64,13 +82,14 @@ func deploy (mode string) string {
 		currentEnv.GitConfig.User,
 		currentEnv.GitConfig.Password,
 		currentEnv.GitConfig.Branch,
-		getAfterCommandString(currentEnv.AfterDeploy),
+		getCommandString(currentEnv.AfterDeploy),
+		getCommandString(currentEnv.BeforeDeploy),
 		)
 
-	return "read config"
+	return "deploy finished"
 }
 
-func getAfterCommandString (afterDeployCommands []config.Command) string {
+func getCommandString (afterDeployCommands []config.Command) string {
 	output := ""
 	for i := 0; i < len(afterDeployCommands); i++ {
 		output += afterDeployCommands[i].Item
@@ -83,18 +102,15 @@ func getAfterCommandString (afterDeployCommands []config.Command) string {
 }
 
 func deployToDev () string {
-	deploy("developer")
-	return "deployed to dev"
+	return deploy(DEVELOPER)
 }
 
 func deployToStaging () string {
-	deploy("staging")
-	return "deployed to staging"
+	return deploy(STAGING)
 }
 
 func deployToProduction () string {
-	deploy("production")
-	return "deployed to prod"
+	return deploy(PRODUCTION)
 }
 
 func getVersion () string {
@@ -106,6 +122,7 @@ func main () {
 	commands := getCommands()
 
 	flag.Parse()
+
 	command := flag.Args()
 
 	if len(command) > 0 {
@@ -158,4 +175,19 @@ func getCommandsToString () {
 			fmt.Println(k + ":" + q)
 		}
 	}
+}
+
+func getExtFromCommand () string {
+	ext := "xml"
+	firstOpt := flag.Arg(1)
+	if firstOpt != "" {
+		if strings.Contains(firstOpt, "-ext") {
+			data := strings.Split(firstOpt, "=")
+			if len(data) == 2 && (data[1] == "json" || data[1] == "xml"){
+				ext = data[1]
+			}
+		}
+	}
+
+	return ext
 }

@@ -26,11 +26,10 @@ func (adapter ConfigAdapterXml) ReadConfigFromFile (c interface{}, name string) 
 
 	byteValue, _ := ioutil.ReadAll(file)
 
-	//xml.Unmarshal(byteValue, &c)
+//	xml.Unmarshal(byteValue, c)
 
 	defer file.Close()
 	return byteValue
-	//return true
 }
 
 func (adapter ConfigAdapterXml) WriteConfigToFile (name string) interface{} {
@@ -140,9 +139,9 @@ CreateStep:
 	}
 
 
-	fmt.Print("Enter project version: ")
-	version, _ := reader.ReadString('\n')
-	conf.Version = prepareStringToSet(version)
+	//fmt.Print("Enter project version: ")
+	//version, _ := reader.ReadString('\n')
+	//conf.Version = prepareStringToSet(version)
 
 	file, _ := xml.MarshalIndent(conf, "", " ")
 

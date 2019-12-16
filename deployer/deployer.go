@@ -7,13 +7,14 @@ import (
 	"log"
 	"os"
 	"strings"
+	"../shellRunner"
 )
 
 const AUTH_PASSWORD string  = "password"
 const AUTH_KEY string = "key"
 
 type AbstractDeployer interface {
-	DeployTo(dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string)
+	DeployTo(dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string, beforeCommands string)
 	PrepareConfig(host string, port string, user string, authMethodValue string, authMethod string)
 }
 
@@ -43,7 +44,9 @@ func (d *SshDeployer) PrepareConfig (host string, port string, user string, auth
 	}
 }
 
-func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string) {
+func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string, beforeCommands string) {
+
+	d.executeBeforeCommand(beforeCommands)
 
 	addr := d.host+":"+d.port
 	client, err := ssh.Dial("tcp", addr, d.config)
@@ -108,6 +111,20 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 		log.Fatal(err)
 	}
 	fmt.Println("finish")
+}
+
+func (d *SshDeployer) executeBeforeCommand (beforeCommands string) {
+	commands := strings.Split(beforeCommands, "&&")
+	if len(commands) > 0 {
+		shell := new(shellRunner.Shell)
+		for _, one := range commands {
+			oneCommand := strings.Split(one, " ")
+			command := oneCommand[0]
+			args := strings.Replace(one, command+" ", "", 1)
+			shell.ExecuteCommand(command, args)
+			shell.PrintResult()
+		}
+	}
 }
 
 func publicKeyFile(file string) ssh.AuthMethod {
