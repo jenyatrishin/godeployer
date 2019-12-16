@@ -1,9 +1,7 @@
 package main
 
 import (
-	"./adapter"
 	"./config"
-	"./factory/xmlAdapterFactory"
 	"./factory/deployerFactory"
 	"./tools"
 	"flag"
@@ -13,7 +11,7 @@ import (
 
 const FILENAME string = "config"
 const SSH_POST string = "22"
-const VERSION string = "0.2.1-alpha"
+const VERSION string = "0.3.1-alpha"
 const DEVELOPER string = "developer"
 const STAGING string = "staging"
 const PRODUCTION string = "production"
@@ -26,10 +24,9 @@ func run (f func() string) bool {
 func createConfig () string {
 	ext := getExtFromCommand()
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	configIns.WriteConfig(FILENAME+"."+ext, adapterIns)
+	configIns.WriteConfig(FILENAME+"."+ext, ext)
 	fmt.Println("Config file created")
 	return "OK"
 }
@@ -39,10 +36,9 @@ func validateConfig () string {
 	ext := getExtFromCommand()
 	message := "Config file not valid"
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	if configIns.ValidateConfig(FILENAME+"."+ext, adapterIns) {
+	if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
 		message = "Config file valid "
 	}
 	fmt.Println(message)
@@ -52,10 +48,9 @@ func validateConfig () string {
 func deploy (mode string) string {
 	ext := getExtFromCommand()
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
+	configIns.ReadConfig(FILENAME+"."+ext, ext)
 
 	deployer := deployerFactory.GetDeployer()
 	currentEnv := configIns.GetEnvByType(mode)
@@ -139,13 +134,6 @@ func main () {
 		getCommandsToString()
 		return
 	}
-}
-
-func GetAdapterByType (configType string) adapter.ConfigAdapter {
-	if configType == "xml" {
-		return xmlAdapterFactory.GetXmlAdapter()
-	}
-	return xmlAdapterFactory.GetXmlAdapter()
 }
 
 func getCommands () map[string]map[string]func()string {

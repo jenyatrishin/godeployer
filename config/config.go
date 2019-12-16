@@ -1,10 +1,12 @@
 package config
 
 import (
-	"../adapter"
 	"encoding/xml"
 	"reflect"
 )
+
+const XML string = "xml"
+const JSON string = "json"
 
 type Config struct {
 	XMLName xml.Name `xml:"config"`
@@ -12,13 +14,15 @@ type Config struct {
 //	Version string `xml:"version"`
 }
 
-func (c *Config) ReadConfig (name string, adapterIns adapter.ConfigAdapter) *Config {
-	x := adapterIns.ReadConfigFromFile(c, name)
-	xml.Unmarshal(x, &c)
+func (c *Config) ReadConfig (name string, ext string) *Config {
+	adapterIns := getAdapterByType(ext)
+	adapterIns.ReadConfigFromFile(c, name)
+
 	return c
 }
 
-func (c *Config) WriteConfig (name string, adapterIns adapter.ConfigAdapter) {
+func (c *Config) WriteConfig (name string, ext string) {
+	adapterIns := getAdapterByType(ext)
 	adapterIns.WriteConfigToFile(name)
 }
 
@@ -40,8 +44,8 @@ func (c *Config) GetEnvByType (envType string) Env {
 	return out
 }
 
-func (c *Config) ValidateConfig (name string, adapterIns adapter.ConfigAdapter) bool {
-
+func (c *Config) ValidateConfig (name string, ext string) bool {
+	//adapterIns := getAdapterByType(ext)
 	return true
 }
 
@@ -79,4 +83,14 @@ type GitConfig struct {
 	User string `xml:"user"`
 	Password string `xml:"password"`
 	Branch string `xml:"branch"`
+}
+
+func getAdapterByType (ext string) ConfigAdapter {
+	if ext == XML {
+		return ConfigAdapterXml{}
+	} else if ext == JSON {
+		//		return adapter.ConfigAdapterJson{}
+	}
+
+	return ConfigAdapterXml{}
 }
