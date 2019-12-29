@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const logFileName string = "dep2go_logs.log"
+const logFileName string = ".dep2go/logs.log"
 
 func WriteLog (message string) {
 	dir, err := os.Getwd()

@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	FILENAME   string = "config"
+	FOLDERNAME string = ".dep2go"
+	FILENAME   string = ".dep2go/config"
 	SSH_POST   string = "22"
 	VERSION    string = "0.3.1-alpha"
 	DEVELOPER  string = "developer"
@@ -22,6 +23,14 @@ const (
 
 func run(f func() string) {
 	f()
+}
+
+func initConfig() string {
+	err := os.Mkdir(FOLDERNAME, os.ModePerm)
+	if err != nil {
+		tools.WriteLog("Init error: " + err.Error())
+	}
+	return "Init folder is created"
 }
 
 func createConfig() string {
@@ -144,6 +153,7 @@ func main() {
 func getCommands() map[string]map[string]func() string {
 	commands := map[string]map[string]func() string{
 		"config": {
+			"init": initConfig,
 			"make":     createConfig,
 			"validate": validateConfig,
 		},
