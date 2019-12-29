@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"../tools"
 )
 
 type Shell struct {
@@ -31,5 +32,7 @@ func (shell *Shell) ExecuteCommand (command string, arguments string) bool {
 
 func (shell *Shell) PrintResult () bool {
 	fmt.Println(shell.Result)
+	tools.WriteLog("Result before commands:")
+	tools.WriteLog(shell.Result)
 	return true
 }

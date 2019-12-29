@@ -109,6 +109,10 @@ CreateStep:
 		}
 	}
 
+	fmt.Print("Enter project name: ")
+	projectName, _ := reader.ReadString('\n')
+	conf.ProjectName = prepareStringToSet(projectName)
+
 	i.Conf = conf
 	//fmt.Print("Enter project version: ")
 	//version, _ := reader.ReadString('\n')
