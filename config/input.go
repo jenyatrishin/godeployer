@@ -1,55 +1,28 @@
-package xml
+package config
 
 import (
-	"../../config"
 	"bufio"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 )
 
-type ConfigAdapterXml struct {
-
+type Input struct {
+	Conf Config
 }
 
-func (adapter ConfigAdapterXml) ReadConfigFromFile (c interface{}, name string) []byte {
-	file, err := os.Open(name)
-
-	if err != nil {
-		panic("There ain't file")
-	}
-
-	fmt.Println("Config file is opened")
-
-	byteValue, _ := ioutil.ReadAll(file)
-
-//	xml.Unmarshal(byteValue, c)
-
-	defer file.Close()
-	return byteValue
-}
-
-func (adapter ConfigAdapterXml) WriteConfigToFile (name string) interface{} {
-
-	if _, err := os.Open(name); err == nil {
-		fmt.Println("File's already exists")
-		return nil
-//		panic("File's already exists")
-	}
+func (i *Input) callUserInput () {
 
 	allowed := []string{"developer","staging","production"}
 	var entered []string
 
 	reader := bufio.NewReader(os.Stdin)
 
-	//conf := tools.GetConfigIns()
-	var conf config.Config
+	var conf Config
 
 CreateStep:
-	var envIns config.Env
+	var envIns Env
 
 	fmt.Print("Enter environment name ("+ strings.Join(Difference(allowed, entered),",")+" or blank for exit): ")
 	env, _ := reader.ReadString('\n')
@@ -102,7 +75,7 @@ CreateStep:
 		envIns.AuthType = prepareStringToSet(authType)
 		envIns.KeyFile = prepareStringToSet(key)
 
-		gitConfigIns := config.GitConfig{
+		gitConfigIns := GitConfig{
 			Repository: prepareStringToSet(gitRepo),
 			User: prepareStringToSet(gitUser),
 			Password: prepareStringToSet(gitPassword),
@@ -114,7 +87,7 @@ CreateStep:
 		fmt.Print("Enter commands before deploy or blank for exit: ")
 		beforeCommand, _ := reader.ReadString('\n')
 		if prepareStringToSet(beforeCommand) != "" {
-			commandItem := config.Command{Item:prepareStringToSet(beforeCommand)}
+			commandItem := Command{Item:prepareStringToSet(beforeCommand)}
 			envIns.BeforeDeploy = append(envIns.BeforeDeploy, commandItem)
 			goto InputBeforeDeploy
 		}
@@ -124,30 +97,26 @@ CreateStep:
 		afterCommand, _ := reader.ReadString('\n')
 
 		if prepareStringToSet(afterCommand) != "" {
-			commandItem := config.Command{Item:prepareStringToSet(afterCommand)}
+			commandItem := Command{Item:prepareStringToSet(afterCommand)}
 			envIns.AfterDeploy = append(envIns.AfterDeploy, commandItem)
 			goto InputAfterDeploy
 		}
 
 		conf.Envs = append(conf.Envs, envIns)
 
-		//fmt.Println(conf)
-
 		if len(Difference(allowed, entered)) > 0 {
 			goto CreateStep
 		}
 	}
 
+	fmt.Print("Enter project name: ")
+	projectName, _ := reader.ReadString('\n')
+	conf.ProjectName = prepareStringToSet(projectName)
 
+	i.Conf = conf
 	//fmt.Print("Enter project version: ")
 	//version, _ := reader.ReadString('\n')
 	//conf.Version = prepareStringToSet(version)
-
-	file, _ := xml.MarshalIndent(conf, "", " ")
-
-	_ = ioutil.WriteFile(name, file, 0777)
-
-	return "create config"
 }
 
 func prepareStringToSet (str string) string {

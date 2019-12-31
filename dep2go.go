@@ -1,78 +1,88 @@
 package main
 
 import (
-	"./adapter"
 	"./config"
-	"./factory/xmlAdapterFactory"
 	"./factory/deployerFactory"
 	"./tools"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 )
 
-const FILENAME string = "config"
-const SSH_POST string = "22"
-const VERSION string = "0.2.1-alpha"
-const DEVELOPER string = "developer"
-const STAGING string = "staging"
-const PRODUCTION string = "production"
+const (
+	FOLDERNAME string = ".dep2go"
+	FILENAME   string = ".dep2go/config"
+	SSH_POST   string = "22"
+	VERSION    string = "0.3.1-alpha"
+	DEVELOPER  string = "developer"
+	STAGING    string = "staging"
+	PRODUCTION string = "production"
+)
 
-func run (f func() string) bool {
+func run(f func() string) {
 	f()
-	return true
 }
 
-func createConfig () string {
+func initConfig() string {
+	err := os.Mkdir(FOLDERNAME, os.ModePerm)
+	if err != nil {
+		tools.WriteLog("Init error: " + err.Error())
+	}
+	return "Init folder is created"
+}
+
+func createConfig() string {
 	ext := getExtFromCommand()
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	configIns.WriteConfig(FILENAME+"."+ext, adapterIns)
+	configIns.WriteConfig(FILENAME+"."+ext, ext)
 	fmt.Println("Config file created")
 	return "OK"
 }
 
-func validateConfig () string {
+func validateConfig() string {
 	fmt.Println("config file is validating...")
-	ext := getExtFromCommand()
+	ext := getConfigFileExtForDeploy()
 	message := "Config file not valid"
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	if configIns.ValidateConfig(FILENAME+"."+ext, adapterIns) {
-		message = "Config file valid "
+	if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
+		message = "Config file valid"
 	}
 	fmt.Println(message)
+
 	return "validate config"
 }
 
-func deploy (mode string) string {
-	ext := getExtFromCommand()
+func deploy(mode string) string {
+	ext := getConfigFileExtForDeploy()
 
-	adapterIns := GetAdapterByType(ext)
 	configIns := new(config.Config)
 
-	configIns.ReadConfig(FILENAME+"."+ext, adapterIns)
+	configIns.ReadConfig(FILENAME+"."+ext, ext)
 
 	deployer := deployerFactory.GetDeployer()
 	currentEnv := configIns.GetEnvByType(mode)
 
 	if currentEnv.EnvType == "" {
-		err := tools.UserError("That environment is not defined")
+		errMessage := "That environment is not defined"
+		tools.WriteLog(errMessage)
+		err := tools.UserError(errMessage)
 		fmt.Println(err)
 		return ""
 	}
-
+	tools.WriteLog("Started deploy to env: " + currentEnv.EnvType)
 	authMethod := currentEnv.AuthType
 
 	var pass string
 	if authMethod == "key" {
 		pass = currentEnv.KeyFile
 	} else {
-		pass =  currentEnv.Password
+		pass = currentEnv.Password
 	}
 
 	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, pass, authMethod)
@@ -84,12 +94,12 @@ func deploy (mode string) string {
 		currentEnv.GitConfig.Branch,
 		getCommandString(currentEnv.AfterDeploy),
 		getCommandString(currentEnv.BeforeDeploy),
-		)
-
+	)
+	tools.WriteLog("Deploy command is finished for env: " + currentEnv.EnvType)
 	return "deploy finished"
 }
 
-func getCommandString (afterDeployCommands []config.Command) string {
+func getCommandString(afterDeployCommands []config.Command) string {
 	output := ""
 	for i := 0; i < len(afterDeployCommands); i++ {
 		output += afterDeployCommands[i].Item
@@ -101,24 +111,24 @@ func getCommandString (afterDeployCommands []config.Command) string {
 	return output
 }
 
-func deployToDev () string {
+func deployToDev() string {
 	return deploy(DEVELOPER)
 }
 
-func deployToStaging () string {
+func deployToStaging() string {
 	return deploy(STAGING)
 }
 
-func deployToProduction () string {
+func deployToProduction() string {
 	return deploy(PRODUCTION)
 }
 
-func getVersion () string {
+func getVersion() string {
 	fmt.Println(VERSION)
 	return VERSION
 }
 
-func main () {
+func main() {
 	commands := getCommands()
 
 	flag.Parse()
@@ -141,22 +151,16 @@ func main () {
 	}
 }
 
-func GetAdapterByType (configType string) adapter.ConfigAdapter {
-	if configType == "xml" {
-		return xmlAdapterFactory.GetXmlAdapter()
-	}
-	return xmlAdapterFactory.GetXmlAdapter()
-}
-
-func getCommands () map[string]map[string]func()string {
-	commands := map[string]map[string]func()string{
+func getCommands() map[string]map[string]func() string {
+	commands := map[string]map[string]func() string{
 		"config": {
-			"make": createConfig,
+			"init": initConfig,
+			"make":     createConfig,
 			"validate": validateConfig,
 		},
 		"deploy": {
-			"developer": deployToDev,
-			"staging": deployToStaging,
+			"developer":  deployToDev,
+			"staging":    deployToStaging,
 			"production": deployToProduction,
 		},
 		"version": {
@@ -167,7 +171,7 @@ func getCommands () map[string]map[string]func()string {
 	return commands
 }
 
-func getCommandsToString () {
+func getCommandsToString() {
 	commands := getCommands()
 	fmt.Println("Commands that can be used:")
 	for k, v := range commands {
@@ -177,16 +181,29 @@ func getCommandsToString () {
 	}
 }
 
-func getExtFromCommand () string {
+func getExtFromCommand() string {
 	ext := "xml"
 	firstOpt := flag.Arg(1)
 	if firstOpt != "" {
-		if strings.Contains(firstOpt, "-ext") {
+		if strings.Contains(firstOpt, "-format") {
 			data := strings.Split(firstOpt, "=")
-			if len(data) == 2 && (data[1] == "json" || data[1] == "xml"){
+			if len(data) == 2 && (data[1] == "json" || data[1] == "xml") {
 				ext = data[1]
 			}
 		}
+	}
+
+	return ext
+}
+
+func getConfigFileExtForDeploy() string {
+	ext := "json"
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := os.Stat(dir + "/" + FILENAME + ".json"); os.IsNotExist(err) {
+		ext = "xml"
 	}
 
 	return ext
