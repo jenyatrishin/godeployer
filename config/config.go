@@ -8,6 +8,8 @@ import (
 const (
 	XML string = "xml"
 	JSON string = "json"
+	AUTH_PASSWORD string  = "password"
+	AUTH_KEY string = "key"
 )
 
 type Config struct {
@@ -48,8 +50,34 @@ func (c *Config) GetEnvByType(envType string) Env {
 }
 
 func (c *Config) ValidateConfig(name string, ext string) bool {
-	//adapterIns := getAdapterByType(ext)
-	return true
+	adapterIns := getAdapterByType(ext)
+	adapterIns.ReadConfigFromFile(c, name)
+	result := true
+	allowed := [3]string{"developer","staging","production"}
+
+	if len(c.GetEnvs()) < 1 || c.ProjectName == "" {
+		result = false
+	}
+
+	for _, envIns := range c.GetEnvs() {
+		if envInArray(envIns.EnvType, allowed) == false || envIns.Server == "" ||
+			envIns.Login == "" || envIns.HomeDir == "" {
+			result = false
+			break
+		}
+		if envIns.AuthType == AUTH_PASSWORD && envIns.Password == "" ||
+			envIns.AuthType == AUTH_KEY && envIns.KeyFile == "" {
+			result = false
+			break
+		}
+		if envIns.GitConfig.Repository == "" || envIns.GitConfig.User == "" ||
+			envIns.GitConfig.Password == "" || envIns.GitConfig.Branch == "" {
+			result = false
+			break
+		}
+	}
+
+	return result
 }
 
 type Env struct {
@@ -99,4 +127,16 @@ func getAdapterByType(ext string) ConfigAdapter {
 	}
 
 	return ConfigAdapterXml{}
+}
+
+func envInArray(env string, envs [3]string) bool {
+	output := false
+	for _, v := range envs {
+		if env == v {
+			output = true
+			break;
+		}
+	}
+
+	return output
 }

@@ -50,6 +50,7 @@ func (d *SshDeployer) PrepareConfig (host string, port string, user string, auth
 func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass string, gitBranch string, afterCommands string, beforeCommands string) {
 
 	d.executeBeforeCommand(beforeCommands)
+
 	addr := d.host+":"+d.port
 	//logs
 	tools.WriteLog("Started deploy to address: " + addr)

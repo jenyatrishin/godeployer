@@ -45,15 +45,16 @@ func createConfig() string {
 
 func validateConfig() string {
 	fmt.Println("config file is validating...")
-	ext := getExtFromCommand()
+	ext := getConfigFileExtForDeploy()
 	message := "Config file not valid"
 
 	configIns := new(config.Config)
 
 	if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
-		message = "Config file valid "
+		message = "Config file valid"
 	}
 	fmt.Println(message)
+
 	return "validate config"
 }
 

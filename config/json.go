@@ -30,7 +30,7 @@ func (adapter ConfigAdapterJson) ReadConfigFromFile (c *Config, name string) []b
 
 func (adapter ConfigAdapterJson) WriteConfigToFile (name string) interface{} {
 	if _, err := os.Open(name); err == nil {
-		fmt.Println("File's already exists")
+		fmt.Println("File already exists")
 		return nil
 	}
 

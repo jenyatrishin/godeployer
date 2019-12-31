@@ -31,7 +31,7 @@ func (adapter ConfigAdapterXml) ReadConfigFromFile (c *Config, name string) []by
 func (adapter ConfigAdapterXml) WriteConfigToFile (name string) interface{} {
 
 	if _, err := os.Open(name); err == nil {
-		fmt.Println("File's already exists")
+		fmt.Println("File already exists")
 		return nil
 	}
 
