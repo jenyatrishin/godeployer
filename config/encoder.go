@@ -14,7 +14,7 @@ type Encoder struct {
 	SecretKey []byte
 }
 
-func (e *Encoder) encode(sentence string) string {
+func (e *Encoder) Encode(sentence string) string {
 	currentUser, err := user.Current()
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func (e *Encoder) encode(sentence string) string {
 	return string(gcm.Seal(nonce, nonce, e.Phrase, nil))
 }
 
-func (e *Encoder) decode(sentence string) string {
+func (e *Encoder) Decode(sentence string) string {
 	currentUser, err := user.Current()
 	if err != nil {
 		panic(err)

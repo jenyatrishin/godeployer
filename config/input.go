@@ -20,6 +20,7 @@ func (i *Input) callUserInput () {
 	reader := bufio.NewReader(os.Stdin)
 
 	var conf Config
+	encoder := Encoder{}
 
 CreateStep:
 	var envIns Env
@@ -70,7 +71,12 @@ CreateStep:
 		envIns.EnvType = prepareStringToSet(env)
 		envIns.Server = prepareStringToSet(ip)
 		envIns.Login = prepareStringToSet(login)
-		envIns.Password = prepareStringToSet(password)
+		//if len(password) > 0 {
+		//	envIns.Password = encoder.Encode(prepareStringToSet(password))
+		//} else {
+			envIns.Password = prepareStringToSet(password)
+		//}
+
 		envIns.HomeDir = prepareStringToSet(homeDir)
 		envIns.AuthType = prepareStringToSet(authType)
 		envIns.KeyFile = prepareStringToSet(key)
@@ -78,7 +84,7 @@ CreateStep:
 		gitConfigIns := GitConfig{
 			Repository: prepareStringToSet(gitRepo),
 			User: prepareStringToSet(gitUser),
-			Password: prepareStringToSet(gitPassword),
+			Password: encoder.Encode(prepareStringToSet(gitPassword)),
 			Branch: prepareStringToSet(gitBranch),
 		}
 		envIns.GitConfig = gitConfigIns

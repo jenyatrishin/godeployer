@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./app"
 	"./config"
 	"./factory/deployerFactory"
 	"./tools"
@@ -15,50 +16,13 @@ const (
 	FOLDERNAME string = ".dep2go"
 	FILENAME   string = ".dep2go/config"
 	SSH_POST   string = "22"
-	VERSION    string = "0.3.1-alpha"
+	VERSION    string = "0.4.1-alpha"
 	DEVELOPER  string = "developer"
 	STAGING    string = "staging"
 	PRODUCTION string = "production"
 )
 
-func run(f func() string) {
-	f()
-}
-
-func initConfig() string {
-	err := os.Mkdir(FOLDERNAME, os.ModePerm)
-	if err != nil {
-		tools.WriteLog("Init error: " + err.Error())
-	}
-	return "Init folder is created"
-}
-
-func createConfig() string {
-	ext := getExtFromCommand()
-
-	configIns := new(config.Config)
-
-	configIns.WriteConfig(FILENAME+"."+ext, ext)
-	fmt.Println("Config file created")
-	return "OK"
-}
-
-func validateConfig() string {
-	fmt.Println("config file is validating...")
-	ext := getConfigFileExtForDeploy()
-	message := "Config file not valid"
-
-	configIns := new(config.Config)
-
-	if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
-		message = "Config file valid"
-	}
-	fmt.Println(message)
-
-	return "validate config"
-}
-
-func deploy(mode string) string {
+func deploy(mode string) {
 	ext := getConfigFileExtForDeploy()
 
 	configIns := new(config.Config)
@@ -73,7 +37,7 @@ func deploy(mode string) string {
 		tools.WriteLog(errMessage)
 		err := tools.UserError(errMessage)
 		fmt.Println(err)
-		return ""
+		return
 	}
 	tools.WriteLog("Started deploy to env: " + currentEnv.EnvType)
 	authMethod := currentEnv.AuthType
@@ -96,7 +60,7 @@ func deploy(mode string) string {
 		getCommandString(currentEnv.BeforeDeploy),
 	)
 	tools.WriteLog("Deploy command is finished for env: " + currentEnv.EnvType)
-	return "deploy finished"
+//	return "deploy finished"
 }
 
 func getCommandString(afterDeployCommands []config.Command) string {
@@ -111,74 +75,79 @@ func getCommandString(afterDeployCommands []config.Command) string {
 	return output
 }
 
-func deployToDev() string {
-	return deploy(DEVELOPER)
+func deployToDev() {
+	deploy(DEVELOPER)
 }
 
-func deployToStaging() string {
-	return deploy(STAGING)
+func deployToStaging() {
+	deploy(STAGING)
 }
 
-func deployToProduction() string {
-	return deploy(PRODUCTION)
-}
-
-func getVersion() string {
-	fmt.Println(VERSION)
-	return VERSION
+func deployToProduction() {
+	deploy(PRODUCTION)
 }
 
 func main() {
-	commands := getCommands()
+	app := &app.Dep2Go{}
 
-	flag.Parse()
-
-	command := flag.Args()
-
-	if len(command) > 0 {
-		s := strings.Split(command[0], ":")
-		if len(s) < 2 {
-			fmt.Println(tools.UserError("You set bad command"))
-			return
-		}
-		closure := tools.CommandIsAllowed(s, commands)
-		run(closure)
-	} else {
-		fmt.Println("Dep2go deployment tool")
-		fmt.Println("Usage: dep2go [--command]")
-		getCommandsToString()
-		return
-	}
-}
-
-func getCommands() map[string]map[string]func() string {
-	commands := map[string]map[string]func() string{
-		"config": {
-			"init": initConfig,
-			"make":     createConfig,
-			"validate": validateConfig,
+	app.AddCommand("config:init",
+		"Make init action",
+		func() {
+			err := os.Mkdir(FOLDERNAME, os.ModePerm)
+			if err != nil {
+				tools.WriteLog("Init error: " + err.Error())
+			}
 		},
-		"deploy": {
-			"developer":  deployToDev,
-			"staging":    deployToStaging,
-			"production": deployToProduction,
-		},
-		"version": {
-			"show": getVersion,
-		},
-	}
+	)
+	app.AddCommand("config:make",
+		"Create config file from command line",
+		func() {
+			ext := getExtFromCommand()
 
-	return commands
-}
+			configIns := new(config.Config)
 
-func getCommandsToString() {
-	commands := getCommands()
-	fmt.Println("Commands that can be used:")
-	for k, v := range commands {
-		for q, _ := range v {
-			fmt.Println(k + ":" + q)
-		}
-	}
+			configIns.WriteConfig(FILENAME+"."+ext, ext)
+			fmt.Println("Config file created")
+		},
+	)
+	app.AddCommand("config:validate",
+		"Validate config file",
+		func() {
+			fmt.Println("config file is validating...")
+			ext := getConfigFileExtForDeploy()
+			message := "Config file not valid"
+
+			configIns := new(config.Config)
+
+			if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
+				message = "Config file valid"
+			}
+			fmt.Println(message)
+		},
+	)
+	app.AddCommand("deploy:developer",
+		"Deploy project to developer environment",
+		deployToDev,
+	)
+
+	app.AddCommand("deploy:staging",
+		"Deploy project to staging environment",
+		deployToStaging,
+	)
+
+	app.AddCommand("deploy:production",
+		"Deploy project to production environment",
+		deployToProduction,
+	)
+
+	app.AddCommand("version:show",
+		"Show dep2go tool current version",
+		func() {
+			fmt.Println(VERSION)
+		},
+	)
+
+	app.Run()
 }
 
 func getExtFromCommand() string {
