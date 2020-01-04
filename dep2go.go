@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./app"
 	"./config"
 	"./factory/deployerFactory"
 	"./tools"
@@ -9,56 +10,20 @@ import (
 	"log"
 	"os"
 	"strings"
+	"gopkg.in/gookit/color.v1"
 )
 
 const (
-	FOLDERNAME string = ".dep2go"
-	FILENAME   string = ".dep2go/config"
-	SSH_POST   string = "22"
-	VERSION    string = "0.3.1-alpha"
-	DEVELOPER  string = "developer"
-	STAGING    string = "staging"
-	PRODUCTION string = "production"
+	FOLDERNAME   string = ".dep2go"
+	FILENAME     string = ".dep2go/config"
+	SSH_POST     string = "22"
+	//VERSION      string = "0.4.2-alpha"
+	DEVELOPER    string = "developer"
+	STAGING      string = "staging"
+	PRODUCTION   string = "production"
 )
 
-func run(f func() string) {
-	f()
-}
-
-func initConfig() string {
-	err := os.Mkdir(FOLDERNAME, os.ModePerm)
-	if err != nil {
-		tools.WriteLog("Init error: " + err.Error())
-	}
-	return "Init folder is created"
-}
-
-func createConfig() string {
-	ext := getExtFromCommand()
-
-	configIns := new(config.Config)
-
-	configIns.WriteConfig(FILENAME+"."+ext, ext)
-	fmt.Println("Config file created")
-	return "OK"
-}
-
-func validateConfig() string {
-	fmt.Println("config file is validating...")
-	ext := getConfigFileExtForDeploy()
-	message := "Config file not valid"
-
-	configIns := new(config.Config)
-
-	if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
-		message = "Config file valid"
-	}
-	fmt.Println(message)
-
-	return "validate config"
-}
-
-func deploy(mode string) string {
+func deploy(mode string) {
 	ext := getConfigFileExtForDeploy()
 
 	configIns := new(config.Config)
@@ -72,17 +37,17 @@ func deploy(mode string) string {
 		errMessage := "That environment is not defined"
 		tools.WriteLog(errMessage)
 		err := tools.UserError(errMessage)
-		fmt.Println(err)
-		return ""
+		color.Red.Println(err)
+		os.Exit(1)
 	}
 	tools.WriteLog("Started deploy to env: " + currentEnv.EnvType)
 	authMethod := currentEnv.AuthType
-
+	encoder := new(config.Encoder)
 	var pass string
 	if authMethod == "key" {
 		pass = currentEnv.KeyFile
 	} else {
-		pass = currentEnv.Password
+		pass = encoder.Decode(currentEnv.Password)
 	}
 
 	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, pass, authMethod)
@@ -90,17 +55,17 @@ func deploy(mode string) string {
 		currentEnv.HomeDir,
 		currentEnv.GitConfig.Repository,
 		currentEnv.GitConfig.User,
-		currentEnv.GitConfig.Password,
+		encoder.Decode(currentEnv.GitConfig.Password),
 		currentEnv.GitConfig.Branch,
 		getCommandString(currentEnv.AfterDeploy),
 		getCommandString(currentEnv.BeforeDeploy),
 	)
 	tools.WriteLog("Deploy command is finished for env: " + currentEnv.EnvType)
-	return "deploy finished"
 }
 
 func getCommandString(afterDeployCommands []config.Command) string {
 	output := ""
+
 	for i := 0; i < len(afterDeployCommands); i++ {
 		output += afterDeployCommands[i].Item
 		if i != len(afterDeployCommands)-1 {
@@ -111,74 +76,76 @@ func getCommandString(afterDeployCommands []config.Command) string {
 	return output
 }
 
-func deployToDev() string {
-	return deploy(DEVELOPER)
-}
-
-func deployToStaging() string {
-	return deploy(STAGING)
-}
-
-func deployToProduction() string {
-	return deploy(PRODUCTION)
-}
-
-func getVersion() string {
-	fmt.Println(VERSION)
-	return VERSION
-}
-
 func main() {
-	commands := getCommands()
+	app := &app.Dep2Go{}
 
-	flag.Parse()
-
-	command := flag.Args()
-
-	if len(command) > 0 {
-		s := strings.Split(command[0], ":")
-		if len(s) < 2 {
-			fmt.Println(tools.UserError("You set bad command"))
-			return
-		}
-		closure := tools.CommandIsAllowed(s, commands)
-		run(closure)
-	} else {
-		fmt.Println("Dep2go deployment tool")
-		fmt.Println("Usage: dep2go [--command]")
-		getCommandsToString()
-		return
-	}
-}
-
-func getCommands() map[string]map[string]func() string {
-	commands := map[string]map[string]func() string{
-		"config": {
-			"init": initConfig,
-			"make":     createConfig,
-			"validate": validateConfig,
+	app.AddCommand("config:init",
+		"Make init action",
+		func() {
+			_, errFolder := os.Stat(FOLDERNAME)
+			if errFolder == nil || os.IsNotExist(errFolder) == false {
+				tools.WriteLog("Init error: .dep2go folder already exists")
+				color.Red.Println("Init error: .dep2go folder already exists")
+				os.Exit(1)
+			}
+			err := os.Mkdir(FOLDERNAME, os.ModePerm)
+			if err != nil {
+				tools.WriteLog("Init error: " + err.Error())
+				color.Red.Println(err.Error())
+				os.Exit(1)
+			}
+			encoder := new(config.Encoder)
+			encoder.WriteKeyFile()
 		},
-		"deploy": {
-			"developer":  deployToDev,
-			"staging":    deployToStaging,
-			"production": deployToProduction,
-		},
-		"version": {
-			"show": getVersion,
-		},
-	}
+	)
+	app.AddCommand("config:make",
+		"Create config file from command line",
+		func() {
+			ext := getExtFromCommand()
 
-	return commands
-}
+			configIns := new(config.Config)
 
-func getCommandsToString() {
-	commands := getCommands()
-	fmt.Println("Commands that can be used:")
-	for k, v := range commands {
-		for q, _ := range v {
-			fmt.Println(k + ":" + q)
-		}
-	}
+			configIns.WriteConfig(FILENAME+"."+ext, ext)
+			fmt.Println("Config file created")
+		},
+	)
+	app.AddCommand("config:validate",
+		"Validate config file",
+		func() {
+			fmt.Println("config file is validating...")
+			ext := getConfigFileExtForDeploy()
+			message := "Config file not valid"
+
+			configIns := new(config.Config)
+
+			if configIns.ValidateConfig(FILENAME+"."+ext, ext) {
+				message = "Config file valid"
+			}
+			fmt.Println(message)
+		},
+	)
+	app.AddCommand("deploy:developer",
+		"Deploy project to developer environment",
+		func() {
+			deploy(DEVELOPER)
+		},
+	)
+
+	app.AddCommand("deploy:staging",
+		"Deploy project to staging environment",
+		func() {
+			deploy(STAGING)
+		},
+	)
+
+	app.AddCommand("deploy:production",
+		"Deploy project to production environment",
+		func() {
+			deploy(PRODUCTION)
+		},
+	)
+
+	app.Run()
 }
 
 func getExtFromCommand() string {

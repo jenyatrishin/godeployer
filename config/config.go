@@ -65,13 +65,13 @@ func (c *Config) ValidateConfig(name string, ext string) bool {
 			result = false
 			break
 		}
-		if envIns.AuthType == AUTH_PASSWORD && envIns.Password == "" ||
+		if envIns.AuthType == AUTH_PASSWORD && string(envIns.Password) == "" ||
 			envIns.AuthType == AUTH_KEY && envIns.KeyFile == "" {
 			result = false
 			break
 		}
 		if envIns.GitConfig.Repository == "" || envIns.GitConfig.User == "" ||
-			envIns.GitConfig.Password == "" || envIns.GitConfig.Branch == "" {
+			string(envIns.GitConfig.Password) == "" || envIns.GitConfig.Branch == "" {
 			result = false
 			break
 		}
@@ -86,7 +86,7 @@ type Env struct {
 	Server string `xml:"server" json:"server"`
 	Login string `xml:"login" json:"login"`
 	AuthType string `xml:"auth_type" json:"authType"`
-	Password string `xml:"password" json:"password"`
+	Password []byte `xml:"password" json:"password"`
 	KeyFile string `xml:"key" json:"key"`
 	HomeDir string `xml:"homeDir" json:"homeDir"`
 	BeforeDeploy []Command `xml:"beforeDeploy" json:"beforeDeploy"`
@@ -115,7 +115,7 @@ type Command struct {
 type GitConfig struct {
 	Repository string `xml:"repository" json:"repository"`
 	User string `xml:"user" json:"user"`
-	Password string `xml:"password" json:"password"`
+	Password []byte `xml:"password" json:"password"`
 	Branch string `xml:"branch" json:"branch"`
 }
 
