@@ -109,15 +109,17 @@ func (d *SshDeployer) DeployTo (dir string, repo string, gitUser string, gitPass
 		"exit",
 	}
 
+	commands = tools.RemoveEmptyElements(commands)
+
 	commandsString := strings.Join(commands," && ")
 	//logs
-	tools.WriteLog("Deploy command on server: " + commandsString)
+	tools.WriteLog("Deploy command on server: " + strings.Replace(commandsString,gitUser+":"+gitPass+"@","",2))
 
 	_, err = fmt.Fprintf(stdin, "%s\n", commandsString)
 	if err != nil {
 		log.Fatal(err)
 		//logs
-		tools.WriteLog("Deploy error: " + string(err.Error()))
+		tools.WriteLog("Deploy error: " + err.Error())
 	}
 
 	// Wait for sess to finish

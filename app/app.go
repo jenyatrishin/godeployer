@@ -4,13 +4,13 @@ import (
 	"../tools"
 	"flag"
 	"fmt"
+	"gopkg.in/gookit/color.v1"
 	"strings"
 )
 
-const SPACES = 20
-var (
-	Green   = tools.Color("\033[1;32m%s\033[0m")
-	Teal    = tools.Color("\033[1;36m%s\033[0m")
+const (
+	SPACES   int = 20
+	VERSION  string = "0.4.2-alpha"
 )
 
 type Dep2Go struct {
@@ -19,6 +19,19 @@ type Dep2Go struct {
 }
 
 func (app *Dep2Go) Run() {
+
+	app.AddCommand(
+		"help:show",
+		"show help information",
+		app.useBaseCommand,
+		)
+	app.AddCommand("version:show",
+		"Show dep2go tool current version",
+		func() {
+			fmt.Println(VERSION)
+		},
+	)
+
 	flag.Parse()
 
 	command := flag.Args()
@@ -40,8 +53,8 @@ func (app *Dep2Go) Run() {
 func (app *Dep2Go) AddCommand(name string, desc string, callback func()) {
 	nameParts := strings.Split(name,":")
 	if len(nameParts) < 2 {
-		fmt.Println("You're using not correct name format -" + name)
-		panic("You're using not correct name format -" + name)
+		color.Red.Println("You're using not correct name format -" + name)
+		return
 	}
 	app.insertCommand(nameParts[0], nameParts[1], callback)
 	app.insertDescription(nameParts[0], nameParts[1], desc)
@@ -84,23 +97,26 @@ func (app *Dep2Go) insertDescription(namePart0 string, namePart1 string, desc st
 }
 
 func (app *Dep2Go) useBaseCommand() {
-	fmt.Println(Green("Dep2go deployment tool"))
+	color.Green.Print("Dep2go deployment tool ")
+	fmt.Print("version ")
+	color.Cyan.Print(VERSION)
+	fmt.Println(" (c) 2019")
 	fmt.Println("")
-	fmt.Println(Teal("Usage:"))
+	color.Cyan.Println("Usage:")
 	fmt.Println("    dep2go [--command] [-options]")
 	fmt.Println("")
-	fmt.Println(Teal("Available options:"))
+	color.Cyan.Println("Available options:")
 	spacesOptions := strings.Repeat(" ", SPACES - 7)
-	fmt.Println(Green("    " + "-format" + spacesOptions + " - " + "set format for new config file"))
+	color.Green.Println("    " + "-format" + spacesOptions + " - " + "set format for new config file")
 	fmt.Println("")
-	fmt.Println(Teal("Available commands:"))
+	color.Cyan.Println("Available commands:")
 	for k, v := range app.commands {
 		fmt.Println(k)
 		for q, _ := range v {
 			desc := app.commandsDesc[k][q]
 			spacesDiff := SPACES - len(k) - len(q) - 1
 			spacesString := strings.Repeat(" ", spacesDiff)
-			fmt.Println(Green("    "+k + ":" + q + spacesString + " - " + desc))
+			color.Green.Println("    "+k + ":" + q + spacesString + " - " + desc)
 		}
 	}
 }

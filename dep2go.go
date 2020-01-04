@@ -10,16 +10,17 @@ import (
 	"log"
 	"os"
 	"strings"
+	"gopkg.in/gookit/color.v1"
 )
 
 const (
-	FOLDERNAME string = ".dep2go"
-	FILENAME   string = ".dep2go/config"
-	SSH_POST   string = "22"
-	VERSION    string = "0.4.1-alpha"
-	DEVELOPER  string = "developer"
-	STAGING    string = "staging"
-	PRODUCTION string = "production"
+	FOLDERNAME   string = ".dep2go"
+	FILENAME     string = ".dep2go/config"
+	SSH_POST     string = "22"
+	//VERSION      string = "0.4.2-alpha"
+	DEVELOPER    string = "developer"
+	STAGING      string = "staging"
+	PRODUCTION   string = "production"
 )
 
 func deploy(mode string) {
@@ -36,17 +37,17 @@ func deploy(mode string) {
 		errMessage := "That environment is not defined"
 		tools.WriteLog(errMessage)
 		err := tools.UserError(errMessage)
-		fmt.Println(err)
-		return
+		color.Red.Println(err)
+		os.Exit(1)
 	}
 	tools.WriteLog("Started deploy to env: " + currentEnv.EnvType)
 	authMethod := currentEnv.AuthType
-
+	encoder := new(config.Encoder)
 	var pass string
 	if authMethod == "key" {
 		pass = currentEnv.KeyFile
 	} else {
-		pass = currentEnv.Password
+		pass = encoder.Decode(currentEnv.Password)
 	}
 
 	deployer.PrepareConfig(currentEnv.Server, SSH_POST, currentEnv.Login, pass, authMethod)
@@ -54,17 +55,17 @@ func deploy(mode string) {
 		currentEnv.HomeDir,
 		currentEnv.GitConfig.Repository,
 		currentEnv.GitConfig.User,
-		currentEnv.GitConfig.Password,
+		encoder.Decode(currentEnv.GitConfig.Password),
 		currentEnv.GitConfig.Branch,
 		getCommandString(currentEnv.AfterDeploy),
 		getCommandString(currentEnv.BeforeDeploy),
 	)
 	tools.WriteLog("Deploy command is finished for env: " + currentEnv.EnvType)
-//	return "deploy finished"
 }
 
 func getCommandString(afterDeployCommands []config.Command) string {
 	output := ""
+
 	for i := 0; i < len(afterDeployCommands); i++ {
 		output += afterDeployCommands[i].Item
 		if i != len(afterDeployCommands)-1 {
@@ -75,28 +76,26 @@ func getCommandString(afterDeployCommands []config.Command) string {
 	return output
 }
 
-func deployToDev() {
-	deploy(DEVELOPER)
-}
-
-func deployToStaging() {
-	deploy(STAGING)
-}
-
-func deployToProduction() {
-	deploy(PRODUCTION)
-}
-
 func main() {
 	app := &app.Dep2Go{}
 
 	app.AddCommand("config:init",
 		"Make init action",
 		func() {
+			_, errFolder := os.Stat(FOLDERNAME)
+			if errFolder == nil || os.IsNotExist(errFolder) == false {
+				tools.WriteLog("Init error: .dep2go folder already exists")
+				color.Red.Println("Init error: .dep2go folder already exists")
+				os.Exit(1)
+			}
 			err := os.Mkdir(FOLDERNAME, os.ModePerm)
 			if err != nil {
 				tools.WriteLog("Init error: " + err.Error())
+				color.Red.Println(err.Error())
+				os.Exit(1)
 			}
+			encoder := new(config.Encoder)
+			encoder.WriteKeyFile()
 		},
 	)
 	app.AddCommand("config:make",
@@ -127,23 +126,22 @@ func main() {
 	)
 	app.AddCommand("deploy:developer",
 		"Deploy project to developer environment",
-		deployToDev,
+		func() {
+			deploy(DEVELOPER)
+		},
 	)
 
 	app.AddCommand("deploy:staging",
 		"Deploy project to staging environment",
-		deployToStaging,
+		func() {
+			deploy(STAGING)
+		},
 	)
 
 	app.AddCommand("deploy:production",
 		"Deploy project to production environment",
-		deployToProduction,
-	)
-
-	app.AddCommand("version:show",
-		"Show dep2go tool current version",
 		func() {
-			fmt.Println(VERSION)
+			deploy(PRODUCTION)
 		},
 	)
 

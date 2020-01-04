@@ -23,10 +23,13 @@ func wrongCommand() {
 	fmt.Println(UserError("You set bad command"))
 }
 
-func Color(colorString string) func(...interface{}) string {
-	sprint := func(args ...interface{}) string {
-		return fmt.Sprintf(colorString,
-			fmt.Sprint(args...))
+func RemoveEmptyElements(data []string) []string {
+	output := make([]string,0)
+	for _, item := range data {
+		if item != "" {
+			output = append(output, item)
+		}
 	}
-	return sprint
+
+	return output
 }

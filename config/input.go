@@ -71,11 +71,11 @@ CreateStep:
 		envIns.EnvType = prepareStringToSet(env)
 		envIns.Server = prepareStringToSet(ip)
 		envIns.Login = prepareStringToSet(login)
-		//if len(password) > 0 {
-		//	envIns.Password = encoder.Encode(prepareStringToSet(password))
-		//} else {
-			envIns.Password = prepareStringToSet(password)
-		//}
+		if len(password) > 0 {
+			envIns.Password = encoder.Encode(prepareStringToSet(password))
+		} else {
+			envIns.Password = []byte(prepareStringToSet(password))
+		}
 
 		envIns.HomeDir = prepareStringToSet(homeDir)
 		envIns.AuthType = prepareStringToSet(authType)
