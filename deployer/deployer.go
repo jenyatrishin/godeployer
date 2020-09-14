@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"../shellRunner"
-	"../tools"
+	"dep2go/shellRunner"
+	"dep2go/tools"
 )
 
 const (

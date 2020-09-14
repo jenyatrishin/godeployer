@@ -1,10 +1,10 @@
 package main
 
 import (
-	"./app"
-	"./config"
-	"./factory/deployerFactory"
-	"./tools"
+	"dep2go/app"
+	"dep2go/config"
+	"dep2go/factory/deployerFactory"
+	"dep2go/tools"
 	"flag"
 	"fmt"
 	"log"
@@ -17,7 +17,6 @@ const (
 	FOLDERNAME   string = ".dep2go"
 	FILENAME     string = ".dep2go/config"
 	SSH_POST     string = "22"
-	//VERSION      string = "0.4.2-alpha"
 	DEVELOPER    string = "developer"
 	STAGING      string = "staging"
 	PRODUCTION   string = "production"

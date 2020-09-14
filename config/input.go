@@ -1,9 +1,7 @@
 package config
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"runtime"
 	"strings"
 )
@@ -13,60 +11,64 @@ type Input struct {
 }
 
 func (i *Input) callUserInput () {
-
 	allowed := []string{"developer","staging","production"}
 	var entered []string
-
-	reader := bufio.NewReader(os.Stdin)
-
 	var conf Config
 	encoder := Encoder{}
 
 CreateStep:
 	var envIns Env
 
-	fmt.Print("Enter environment name ("+ strings.Join(Difference(allowed, entered),",")+" or blank for exit): ")
-	env, _ := reader.ReadString('\n')
-
+	fmt.Print("Enter environment name ("+ strings.Join(Difference(allowed, entered),",")+" or blank for continue): ")
+	env := ""
+	fmt.Scanf("%s", &env)
 
 	if prepareStringToSet(env) != "" {
 
 		password := ""
 		key := ""
+		ip := ""
+		login := ""
+		authType := ""
+		homeDir := ""
+		gitRepo := ""
+		gitUser := ""
+		gitPassword := ""
+		gitBranch := ""
 
 		entered = append(entered, prepareStringToSet(env))
 
 		fmt.Print("Enter server address: ")
-		ip, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &ip)
 
 		fmt.Print("Enter server login: ")
-		login, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &login)
 
 		fmt.Print("Enter server auth type (key or password only): ")
-		authType, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &authType)
 
 		if prepareStringToSet(authType) == "key" {
 			fmt.Print("Enter key location: ")
-			key, _ = reader.ReadString('\n')
+			fmt.Scanf("%s", &key)
 		} else {
 			fmt.Print("Enter server password: ")
-			password, _ = reader.ReadString('\n')
+			fmt.Scanf("%s", &password)
 		}
 
 		fmt.Print("Enter project home dir on server: ")
-		homeDir, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &homeDir)
 
 		fmt.Print("Enter git repository https address: ")
-		gitRepo, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &gitRepo)
 
 		fmt.Print("Enter git user name: ")
-		gitUser, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &gitUser)
 
 		fmt.Print("Enter git user password: ")
-		gitPassword, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &gitPassword)
 
 		fmt.Print("Enter git branch name: ")
-		gitBranch, _ := reader.ReadString('\n')
+		fmt.Scanf("%s", &gitBranch)
 
 		envIns.EnvType = prepareStringToSet(env)
 		envIns.Server = prepareStringToSet(ip)
@@ -90,8 +92,9 @@ CreateStep:
 		envIns.GitConfig = gitConfigIns
 
 	InputBeforeDeploy:
-		fmt.Print("Enter commands before deploy or blank for exit: ")
-		beforeCommand, _ := reader.ReadString('\n')
+		fmt.Print("Enter commands before deploy or blank for continue: ")
+		beforeCommand := ""
+		fmt.Scanf("%s", &beforeCommand)
 		if prepareStringToSet(beforeCommand) != "" {
 			commandItem := Command{Item:prepareStringToSet(beforeCommand)}
 			envIns.BeforeDeploy = append(envIns.BeforeDeploy, commandItem)
@@ -99,8 +102,9 @@ CreateStep:
 		}
 
 	InputAfterDeploy:
-		fmt.Print("Enter commands after deploy or blank for exit: ")
-		afterCommand, _ := reader.ReadString('\n')
+		fmt.Print("Enter commands after deploy or blank for continue: ")
+		afterCommand := ""
+		fmt.Scanf("%s", &afterCommand)
 
 		if prepareStringToSet(afterCommand) != "" {
 			commandItem := Command{Item:prepareStringToSet(afterCommand)}
@@ -116,13 +120,11 @@ CreateStep:
 	}
 
 	fmt.Print("Enter project name: ")
-	projectName, _ := reader.ReadString('\n')
+	projectName := ""
+	fmt.Scanf("%s", &projectName)
 	conf.ProjectName = prepareStringToSet(projectName)
 
 	i.Conf = conf
-	//fmt.Print("Enter project version: ")
-	//version, _ := reader.ReadString('\n')
-	//conf.Version = prepareStringToSet(version)
 }
 
 func prepareStringToSet (str string) string {

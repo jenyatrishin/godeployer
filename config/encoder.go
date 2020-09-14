@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	mRand "math/rand"
-	"../tools"
+	"dep2go/tools"
 	"strings"
 	"time"
 )

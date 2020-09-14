@@ -1,7 +1,7 @@
 package app
 
 import (
-	"../tools"
+	"dep2go/tools"
 	"flag"
 	"fmt"
 	"gopkg.in/gookit/color.v1"
@@ -10,7 +10,7 @@ import (
 
 const (
 	SPACES   int = 20
-	VERSION  string = "0.4.2-alpha"
+	VERSION  string = "0.4.3-alpha"
 )
 
 type Dep2Go struct {

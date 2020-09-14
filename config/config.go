@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/xml"
-	"reflect"
 )
 
 const (
@@ -16,7 +15,6 @@ type Config struct {
 	XMLName xml.Name `xml:"config" json:"config"`
 	Envs []Env `xml:"environment" json:"environment"`
 	ProjectName string `xml:"project_name" json:"projectName"`
-//	Version string `xml:"version"`
 }
 
 func (c *Config) ReadConfig(name string, ext string) *Config {
@@ -92,20 +90,6 @@ type Env struct {
 	BeforeDeploy []Command `xml:"beforeDeploy" json:"beforeDeploy"`
 	AfterDeploy []Command `xml:"afterDeploy" json:"afterDeploy"`
 	GitConfig GitConfig `xml:"git" json:"git"`
-}
-
-//deprecated
-//gonna be removed
-func (e *Env) SetParam(name string, value string) *Env {
-	return e
-}
-
-//deprecated
-//gonna be removed
-func (e *Env) GetParam(name string) interface{} {
-	r := reflect.ValueOf(e)
-	f := reflect.Indirect(r).FieldByName(name)
-	return f
 }
 
 type Command struct {

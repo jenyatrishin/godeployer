@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"../tools"
+	"dep2go/tools"
 )
 
 type Shell struct {

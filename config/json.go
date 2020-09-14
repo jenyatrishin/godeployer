@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"dep2go/tools"
 )
 
 type ConfigAdapterJson struct {
@@ -15,7 +16,9 @@ func (adapter ConfigAdapterJson) ReadConfigFromFile (c *Config, name string) []b
 	file, err := os.Open(name)
 
 	if err != nil {
-		panic("There ain't file")
+		fmt.Println(tools.UserError("There ain't file"))
+		tools.WriteLog("There ain't file")
+		os.Exit(1)
 	}
 
 	fmt.Println("Config file is opened")
@@ -25,6 +28,7 @@ func (adapter ConfigAdapterJson) ReadConfigFromFile (c *Config, name string) []b
 	json.Unmarshal(byteValue, &c)
 
 	defer file.Close()
+
 	return byteValue
 }
 
